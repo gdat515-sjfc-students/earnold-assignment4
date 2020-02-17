@@ -1,0 +1,87 @@
+---
+title: "earnold- assignment4"
+author: "Emily Arnold"
+date: "2/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(plotly)
+library(dplyr)
+```
+
+In anticipation of the 2020 Summer olympics, I wanted to look at historical data surrounding the olympics. My specific research question was: how has female participation in the olympics changed over time?
+
+I am working with a dataset that I found on Kaggle (https://www.kaggle.com/divyansh22/summer-olympics-medals/data) that records the history all medals won at the summer olympics from 1976 - 2009. It breaks the medals down by gold/silver/bronze, sport, country, and male vs. female.
+
+Since all of the available variables here are categorical, I am going to have to do some aggregating in order to have a count of medals won by each gender each year.
+
+```{r olympics}
+
+olympics <- read.csv("Summer-Olympic-medals-1976-to-2008.csv")
+
+olympics2 <- na.omit(olympics %>%
+  group_by(Sport, Gender, Country, Year) %>% 
+  summarize(gold_medals = sum(Medal == "Gold"),
+            silver_medals = sum(Medal == "Silver"),
+            bronze_medals = sum(Medal == "Bronze")))
+
+```
+
+I will use a count of total gold medals won as the measure of wins, and this first plot displays those wins as a scatter plot over time, with each point representing the total gold medals won by one sport, country, and one gender. 
+
+```{r first plot}
+
+plot_ly(olympics2, x = ~Year, y = ~gold_medals, color = ~Gender, text = ~paste0(Country, "<br> Sport: ", Sport)) %>% 
+  add_trace(p=.,type = "scatter") %>% 
+  layout(xaxis = list(title = "Year"),
+         yaxis = list(title = "Number of Gold Medals Awarded"),
+         title = "Gold Medals by Sport and Country")
+
+```
+
+A vague trend appears here, showing that men overall win more gold medals consistently over time. Also, the ability to hover over a point and see which sport it represents is helpful. The notably high female point in 1996 is for aquatics, as are most of the top points.
+
+I'm still interested in a more clear trend about female winnings overall. I'm going to aggregate once again, and this time eliminate the factor of which sport the medals were won in. 
+
+```{r aggregate again}
+
+olympics_gender <- na.omit(olympics %>%
+  group_by(Gender, Country, Year) %>% 
+  summarize(gold_medals = sum(Medal == "Gold"),
+            silver_medals = sum(Medal == "Silver"),
+            bronze_medals = sum(Medal == "Bronze")))
+```
+
+Now that I have regrouped the data, I can create a new visual. This time, I want to look at gold medals won every year, broken out into two different bars by gender. 
+
+```{r}
+plot_ly(olympics_gender, x = ~Year, y = ~gold_medals, color = ~Gender, text = ~paste0(Country)) %>% 
+  add_trace(p=.,type = "bar") %>% 
+  layout(xaxis = list(title = "Year"),
+         yaxis = list(title = "Number of Gold Medals Awarded"),
+         title = "Gold Medals by Gender")
+```
+
+I think this visualization is impactful, because it clearly demonstrates the increased winnings of female atheletes in blue as time goes on, while male gold medal counts stay relatively constant. 
+
+The ability to hover the bars and reveal the country represented is helpful, and it would be cool if I could filter this by country.
+
+Finally, I'm going to look at male versus female winnings overall, broken out by sport.
+
+```{r}
+na.omit(olympics %>%
+  group_by(Gender, Country, Sport) %>% 
+  summarize(gold_medals = sum(Medal == "Gold"),
+            silver_medals = sum(Medal == "Silver"),
+            bronze_medals = sum(Medal == "Bronze"))) %>% 
+  plot_ly(., x = ~Sport, y = ~gold_medals, color = ~Gender, text = ~paste0(Country)) %>% 
+  add_trace(p=.,type = "bar") %>% 
+  layout(xaxis = list(title = "Sport"),
+         yaxis = list(title = "Number of Gold Medals Awarded"),
+         title = "Gold Medals by Gender and Sport")
+```
+
+This plot reveals the only sport in which women won more gold medals over the course of this time range (1976 to 2008) is gymnastics.
